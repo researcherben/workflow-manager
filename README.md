@@ -1,1 +1,1 @@
-# workflow-manager
+# workflow manager
