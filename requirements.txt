@@ -1,0 +1,9 @@
+black 
+flake8 
+jsonschema 
+mypy 
+prospector 
+pycallgraph 
+pylint
+sphinx 
+

@@ -15,6 +15,8 @@ python3 run_workflow.py file.json | tee file.log
 from datetime import datetime
 import sys
 import json
+from jsonschema import validate  # type: ignore
+import logging
 import subprocess # https://docs.python.org/3/library/subprocess.html
 import argparse   # https://docs.python.org/3/library/argparse.html
 import os # path, uname
@@ -31,7 +33,11 @@ def run_command(command_str: str) -> dict:
     time_format = "%Y-%m-%d %H:%M:%S"
 
     time_before = datetime.today()
-    result = subprocess.run(command_list, capture_output=True, shell=True)
+
+    if sys.version_info.major == 3 and sys.version_info.minor >= 7:
+        result = subprocess.run(command_list, capture_output=True, shell=True)
+    else: # needed for Python 3.6; see https://stackoverflow.com/a/53209196/1164295
+        result = subprocess.run(command_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     time_after = datetime.today()
 
 #result: CompletedProcess(args=['ls', '-l', '/dev/null'], returncode=0, stdout=b'crw-rw-rw-  1 root  wheel    3,   2 Nov 16 16:22 /dev/null\n', stderr=b'')
@@ -61,6 +67,13 @@ if __name__ == "__main__":
         help="name of JSON file containing workflow and configuration parameters",
     )
 
+    theparser.add_argument(
+        "-s", "--config_schema",
+        dest="config_schema",
+        type=str,
+        help="schema for config"
+    )
+
     args = theparser.parse_args()
 
     if os.path.isfile(args.config_filename):
@@ -68,15 +81,35 @@ if __name__ == "__main__":
             try:
                 config_data = json.load(file_handle)
             except json.decoder.JSONDecodeError:
-                print("ERROR: file does not appear to be valid JSON. Exiting...\n", file=sys.stderr)
+                print("ERROR: configuration file does not appear to be valid JSON. Exiting...\n", file=sys.stderr)
                 sys.exit(1)
     else: # file didn't exist
-        print("ERROR: specified file name '"+str(config_filename)+"' not found. Exiting...\n", file=sys.stderr)
+        print("ERROR: specified configuration file name '"+str(args.config_filename)+"' not found. Exiting...\n", file=sys.stderr)
         sys.exit(1)
 
     # at this point 1) we have a file and 2) the file contains valid JSON
 
+    if args.config_schema:
+       if os.path.isfile(args.config_schema):
+           with open(args.config_schema,'r') as file_handle:
+               try:
+                  config_schema = json.load(file_handle)
+               except json.decoder.JSONDecodeError:
+                print("ERROR: schema file does not appear to be valid JSON. Exiting...\n", file=sys.stderr)
+                sys.exit(1)
+       else: # file didn't exist
+           print("ERROR: specified schema file name '"+str(args.config_schema)+"' not found. Exiting...\n", file=sys.  stderr)
+           sys.exit(1)
+       # TODO: check schema
+       try:
+           validate(instance=config_data, schema=config_schema)
+       except Exception as err:
+           print("validation of config JSON against schema failed. Exiting...\n", file=sys.stderr)
+           sys.exit(1)
+
     print(os.uname())
+    print(sys.version_info)
+
     for command in config_data["workflow commands"]:
         result_dict = run_command(command)
         print("**************************************")

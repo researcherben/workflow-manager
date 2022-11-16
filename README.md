@@ -12,3 +12,8 @@ Document the commands used and the results of those commands
 
     optional arguments:
       -h, --help            show this help message and exit
+
+
+Schema generated using
+<https://www.liquid-technologies.com/online-json-to-schema-converter>
+
