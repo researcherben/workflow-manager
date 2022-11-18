@@ -1,6 +1,19 @@
-# workflow manager
+Default option for bash commands: execute interactively in a terminal
 
-Document the commands used and the results of those commands.
+Smarter approach: use a shell script. Enables reply of commands and commentary.
+But even a script doesn't capture metadata. 
+
+# Python-based bash workflow manager
+
+Document shell commands used and the results of those commands.
+
+This is like a Jupyter notebook that uses the bash kernel, but collects meta data:
+* hostname
+* start time per command
+* end time per command
+* command duration
+The downside of launching shell commands using Python's subprocess is the lack of environment variables
+
 
 # command line use
 
